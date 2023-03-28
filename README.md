@@ -8,6 +8,7 @@ Tabela de conteúdos
   * [Sobre](#Sobre)
   * [Como usar](#como-usar)
     * [Pré Requisitos](#pré-requisitos)
+    * [DOC API](#documentação)
   * [Tecnologias](#tecnologias)
 <!--te-->
 
@@ -22,6 +23,11 @@ Essa é uma api desenvolvida para realizar o desafio proposto pela Faculdade PD 
 Antes de começar, você vai precisar ter instalado em sua máquina as seguintes ferramentas:
 [Git](https://git-scm.com), [GO](https://go.dev/) e [PostgreSQL](https://www.postgresql.org/docs/). 
 Além disto é bom ter um editor para trabalhar com o código como [VSCode](https://code.visualstudio.com/)
+
+
+## Documentação
+Postman Collection: https://github.com/FehRoque/api-golang-faculdade-pd/main/docs/PD-API.postman_collection.json
+Public URL Postman: https://documenter.getpostman.com/view/11695805/2s93RQTtvB
 
 
 ### 🎲 Rodando o Back End (API)
