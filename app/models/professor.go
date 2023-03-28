@@ -10,15 +10,12 @@ type Professor struct {
 	Formacao string `json:"formacao"`
 }
 
-type Professores struct {
-	Professores []Professor `json:"professores"`
-}
+type Professores []Professor
 
 type CreateProfessorSchema struct {
 	Nome     string `json:"nome" validate:"required"`
 	Formacao string `json:"formacao"`
 }
-
 
 type UpdateProfessorSchema struct {
 	Nome     string `json:"nome,omitempty"`

@@ -9,7 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 func CreateAluno(c *fiber.Ctx) error {
 	var payload *models.CreateAlunoSchema
 
@@ -21,18 +20,17 @@ func CreateAluno(c *fiber.Ctx) error {
 	if errors != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(errors)
 	}
-	
-	newAluno := models.Aluno {
+
+	newAluno := models.Aluno{
 		Nome: payload.Nome,
-		Cpf: payload.Cpf,
+		Cpf:  payload.Cpf,
 	}
 
 	result := database.Database.Db.Create(&newAluno)
-
 	if result.Error != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": result.Error.Error()})
 	}
-	
+
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"status": "success", "data": fiber.Map{"aluno": newAluno}})
 }
 
@@ -50,7 +48,22 @@ func DeleteAluno(c *fiber.Ctx) error {
 }
 
 func FindDisciplinasByAluno(c *fiber.Ctx) error {
-	return c.SendStatus(fiber.StatusNoContent)
+	id := c.Params("id")
+
+	var aluno models.Aluno
+	result := database.Database.Db.First(&aluno, "id = ?", id)
+
+	if err := result.Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "Nenhum aluno existente com esse ID."})
+		}
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
+	}
+
+	var disciplinas models.DisciplinaMatriculas
+	disciplinas = aluno.DisciplinaMatriculas
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": fiber.Map{"aluno": aluno, "disciplinas": disciplinas}})
 }
 
 func GetAlunoById(c *fiber.Ctx) error {
@@ -58,19 +71,20 @@ func GetAlunoById(c *fiber.Ctx) error {
 
 	var aluno models.Aluno
 	result := database.Database.Db.First(&aluno, "id = ?", id)
+
 	if err := result.Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "Nenhum aluno existente com esse ID."})
 		}
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
 	}
-	
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": fiber.Map{"aluno": aluno}})
 }
 
 func GetAlunos(c *fiber.Ctx) error {
 	var alunos []models.Aluno
-	
+
 	results := database.Database.Db.Find(&alunos)
 	if results.Error != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": results.Error})
@@ -81,15 +95,15 @@ func GetAlunos(c *fiber.Ctx) error {
 
 func UpdateAluno(c *fiber.Ctx) error {
 	id := c.Params("id")
-
 	var payload *models.UpdateAlunoSchema
 
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": err.Error()})
 	}
-	
+
 	var aluno models.Aluno
 	result := database.Database.Db.First(&aluno, "id = ?", id)
+
 	if err := result.Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "Nenhum aluno existente com esse ID."})
@@ -107,7 +121,6 @@ func UpdateAluno(c *fiber.Ctx) error {
 	}
 
 	updates["updated_at"] = time.Now()
-
 	database.Database.Db.Model(&aluno).Updates(updates)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": fiber.Map{"aluno": aluno}})

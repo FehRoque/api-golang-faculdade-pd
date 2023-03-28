@@ -9,7 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 func CreateCurso(c *fiber.Ctx) error {
 	var payload *models.CreateCursoSchema
 
@@ -23,17 +22,25 @@ func CreateCurso(c *fiber.Ctx) error {
 
 	}
 
-	newCurso := models.Curso {
-		Nome: payload.Nome,
-		FaculdadeId: payload.FaculdadeId,
+	var faculdade models.Faculdade
+	result := database.Database.Db.First(&faculdade, "id = ?", payload.FaculdadeID)
+	if err := result.Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "Nenhuma faculdade existente com esse ID."})
+		}
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
 	}
 
-	result := database.Database.Db.Create(&newCurso)
+	newCurso := models.Curso{
+		Nome:        payload.Nome,
+		FaculdadeID: faculdade.ID,
+	}
 
+	result = database.Database.Db.Create(&newCurso)
 	if result.Error != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": result.Error.Error()})
 	}
-	
+
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"status": "success", "data": fiber.Map{"curso": newCurso}})
 }
 
@@ -42,7 +49,7 @@ func DeleteCurso(c *fiber.Ctx) error {
 	result := database.Database.Db.Delete(&models.Curso{}, "id = ?", id)
 
 	if result.RowsAffected == 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "Nenhum curso existente com esse ID."})
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "id not found."})
 	} else if result.Error != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": result.Error})
 	}
@@ -51,7 +58,21 @@ func DeleteCurso(c *fiber.Ctx) error {
 }
 
 func FindAlunosByCurso(c *fiber.Ctx) error {
-	return c.SendStatus(fiber.StatusNoContent)
+	id := c.Params("id")
+
+	var curso models.Curso
+	result := database.Database.Db.First(&curso, "id = ?", id)
+
+	if err := result.Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "id not found."})
+		}
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
+	}
+
+	var alunos models.Alunos
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": fiber.Map{"curso": curso, "alunos": alunos}})
 }
 
 func GetCursoById(c *fiber.Ctx) error {
@@ -61,17 +82,17 @@ func GetCursoById(c *fiber.Ctx) error {
 	result := database.Database.Db.First(&curso, "id = ?", id)
 	if err := result.Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "Nenhum curso existente com esse ID."})
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "id not found."})
 		}
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
 	}
-	
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": fiber.Map{"curso": curso}})
 }
 
 func GetCursos(c *fiber.Ctx) error {
 	var cursos []models.Curso
-	
+
 	results := database.Database.Db.Find(&cursos)
 	if results.Error != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": results.Error})
@@ -88,7 +109,7 @@ func UpdateCurso(c *fiber.Ctx) error {
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": err.Error()})
 	}
-	
+
 	var curso models.Curso
 	result := database.Database.Db.First(&curso, "id = ?", id)
 
@@ -104,7 +125,19 @@ func UpdateCurso(c *fiber.Ctx) error {
 		updates["nome"] = payload.Nome
 	}
 
-	updates["faculdade_id"] = payload.FaculdadeId
+	if payload.FaculdadeID != "" {
+		var faculdade models.Faculdade
+		result = database.Database.Db.First(&faculdade, "id = ?", payload.FaculdadeID)
+		if err := result.Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "Nenhuma faculdade existente com esse ID."})
+			}
+			return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
+		}
+
+		updates["faculdade_id"] = faculdade.ID
+	}
+
 	updates["updated_at"] = time.Now()
 
 	database.Database.Db.Model(&curso).Updates(updates)
