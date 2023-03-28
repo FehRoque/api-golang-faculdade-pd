@@ -55,7 +55,7 @@ $ go run main.go
 As seguintes ferramentas foram usadas na construção do projeto:
 
 - [Go](https://go.dev/)
-- [Filber](https://docs.gofiber.io/)
+- [Fiber](https://docs.gofiber.io/)
 - [GORM](https://gorm.io/docs/)
 - [PostgreSQL](https://www.postgresql.org/docs/)
 
